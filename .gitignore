@@ -1,0 +1,9 @@
+*.dll
+*.so.*
+.dub
+dub.selections.json
+*.dlangide* 
+*.exe 
+*.ogg 
+*.m3u8 
+*.settings 

@@ -1,0 +1,6 @@
+name "player-class"
+description "player-class"
+authors "KVetal"
+copyright "Copyright © 2018, KVetal"
+license "n/l"
+dependency "derelict-sfml2" version="~>4.0.0-beta.2"
