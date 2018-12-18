@@ -8,6 +8,9 @@ import std.utf;
 import std.encoding;
 import std.conv;
 import std.string;
+import std.exception;
+
+bool fDebug = false;
 
 ///
 struct PlayListItem {
@@ -72,7 +75,13 @@ class PlayList : IPlaylist{
 	/** Загрузить плейлист из файла m3u8*/
 	bool loadFromPLFile(string fileName){
 		/* Открываем файл */
-		auto file = File(fileName,"r");
+		File file;
+		try{
+			file = File(fileName,"r");
+		} catch (Exception e){
+			if (fDebug) writeln(e.msg);
+			return false;
+		}
 		scope(exit) file.close;
 		/* чистим плейлист */
 		_playlist = [];
@@ -119,7 +128,7 @@ class PlayList : IPlaylist{
 				addTrackFromFile(cast(string)line);
 			}
 		}
-		return false;
+		return true;
 }
 	/** Сохранить плейлист в файл m3u8*/
 	bool saveToPLFile(string fileName){
@@ -229,6 +238,6 @@ unittest{
 	assert(pl.length == 0);
 	pl.addTrackFromFile("/home/user/music/Хлам/какая то попсятина.ogg");
 	assert(pl.getTrack(0).info == "какая то попсятина");
-	pl.loadFromPLFile("playlist.m3u8");
-	assert(pl.length > 0);
+	if (pl.loadFromPLFile("playlist.m3u8"))
+		assert(pl.length > 0);
 }
