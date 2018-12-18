@@ -1,5 +1,5 @@
-name "player-class"
-description "player-class"
+name "AudioPlayer"
+description "audio player"
 authors "KVetal"
 copyright "Copyright © 2018, KVetal"
 license "n/l"

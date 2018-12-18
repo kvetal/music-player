@@ -7,3 +7,4 @@ dub.selections.json
 *.ogg 
 *.m3u8 
 *.settings 
+AudioPlayer
