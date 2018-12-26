@@ -15,54 +15,7 @@ import std.range;
 
 bool fDebug = false;
 
-
-enum SEEK_SET = 0;/* set file offset to offset */
-enum SEEK_CUR = 1;/* set file offset to current plus offset */
-enum SEEK_END = 2;/* set file offset to EOF plus offset */
-
-
-enum Status
-{
-	Stopped = 0, 
-	Paused = 1,
-	Playing = 2
-};
-   
-struct playMessage{}
-struct stopMessage{}
-struct pauseMessage{}
-struct seekMessage
-{
-	long sec;
-	this(long sec)
-	{
-		this.sec = sec;
-	}
-}
-
-struct askOffsetMessage
-{
-}
-
-struct volumeMessage
-{
-	float volume;
-	this(float volume)
-	{
-		this.volume = volume;
-	}
-}
-
-struct statusMessage
-{
-	Status status;
-	this(Status status)
-	{
-		this.status = status;
-	}
-}
-
-class MP3Player : Player
+class MP3Player : IPlayer
 {	
 	private
 	{

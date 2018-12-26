@@ -63,7 +63,7 @@ interface IPlaylist {
 	void setArray(PlayListItem[] playlist);
 }
 
-interface Player {
+interface IPlayer {
 	bool openFromFile(string fileName);
 	void play();
 	void pause();
@@ -72,5 +72,52 @@ interface Player {
 	void setPlayingOffset(long offset);
 	long getPlayingOffset();
 	soundStatus getStatus();
+}
+
+enum SEEK_SET = 0;/* set file offset to offset */
+enum SEEK_CUR = 1;/* set file offset to current plus offset */
+enum SEEK_END = 2;/* set file offset to EOF plus offset */
+
+
+enum Status
+{
+	Stopped = 0, 
+	Paused = 1,
+	Playing = 2
+};
+   
+struct playMessage{}
+struct stopMessage{}
+struct pauseMessage{}
+struct seekMessage
+{
+	long sec;
+	this(long sec)
+	{
+		this.sec = sec;
 	}
+}
+
+struct askOffsetMessage
+{
+}
+
+struct volumeMessage
+{
+	float volume;
+	this(float volume)
+	{
+		this.volume = volume;
+	}
+}
+
+struct statusMessage
+{
+	Status status;
+	this(Status status)
+	{
+		this.status = status;
+	}
+}
+
 

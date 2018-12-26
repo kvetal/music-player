@@ -9,7 +9,7 @@ import derelict.sfml2;
 import types;
 
 
-class APlayer : Player{
+class APlayer : IPlayer{
 	this(){
 		DerelictSFML2Audio.load();
 	}
