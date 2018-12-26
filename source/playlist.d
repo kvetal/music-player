@@ -9,64 +9,9 @@ import std.encoding;
 import std.conv;
 import std.string;
 import std.exception;
+import types;
 
 bool fDebug = false;
-
-///
-struct PlayListItem {
-	/** Полное имя файла включая путь*/
-	string fullFileName;
-	/** Имя самого фала и расширение*/
-	string shortFileName;
-	/** Длительность в секундах*/
-	long duration = -1;
-	/** Инфо*/
-	string info;
-	}
-
-enum string bom = [0xef,0xbb,0xbf];
-	
-///Интерейс плейлиста
-interface IPlaylist {
-	/** Загрузить плейлист из файла m3u8*/
-	bool loadFromPLFile(string fileName);
-	/** Сохранить плейлист в файл m3u8*/
-	bool saveToPLFile(string fileName);
-	/** Добавить аудио файл в плейлист*/
-	void addTrackFromFile(string fileName);
-	/** Добавить трек в конец плейлиста*/
-	void addTrack(PlayListItem info);
-	/** Удалить файл из плейлиста*/
-	bool removeTrack(size_t index);
-	/** Получить номер текущего трека*/
-	size_t getCurrentTrackIndex();
-	/** Установить текущий трек*/
-	void setCurrentTrackIndex(size_t index);
-	/** Получить трек по нидексу*/
-	PlayListItem getTrack(size_t index);
-	/** Изменить инфо о треке*/
-	void setTrackInfo(size_t index, PlayListItem info);
-	/** Получить текущий трек*/
-	PlayListItem getCurrentTrack();
-	/** переключить текущий трек на следующий и получить его данные, если выключен loop флаг,
-	После последнего треке возвращает null*/
-	PlayListItem next();
-	/** переключить текущий трек на предыдущий и получить его данные,  если выключен loop флаг,
-	После первого трека возвращает null*/
-	PlayListItem prev();
-	/** установить флаг циклического перебора треков*/
-	void setLoop(bool flag);
-	/** получить флаг циклического перебора треков*/
-	bool getLoop();
-	/** Размер плейлиста*/
-	@property size_t length();
-	/** Получить копию плейлиста в виде массива структур типа PlayListItem*/
-	PlayListItem[] getArray();
-	/** Передать в класс массив записаей типа PlayListItem.
-	Будет передана ссылка, изменения исходнго массива будут влиять на плейлист, 
-	если это не нужно передавайте PlayListItem[].idup.*/
-	void setArray(PlayListItem[] playlist);
-}
 
 class PlayList : IPlaylist{
 	this(){
@@ -129,11 +74,30 @@ class PlayList : IPlaylist{
 			}
 		}
 		return true;
-}
+	}
 	/** Сохранить плейлист в файл m3u8*/
 	bool saveToPLFile(string fileName){
-		return false;
+		if (!_playlist.length) return false;
+		File file;
+		try{
+			file = File(fileName,"w");
+		} catch (Exception e){
+			if (fDebug) writeln(e.msg);
+			return false;
+		}
+		scope(exit) file.close;
+		file.writeln(bom,"#EXTM3U");
+		if (_playlist.length > 0){
+			foreach (item;_playlist){
+				file.writeln("#EXTINF:",item.duration,",",item.info);
+				file.writeln(item.fullFileName);
+			}
+			file.sync;
+		}
+		return true;
 	}
+
+
 	/** Добавить аудио файл в конец плейлиста*/
 	void addTrackFromFile(string fileName){
 		auto splittedFileName = fileName.split(regex(`[\\/]`));
@@ -240,4 +204,5 @@ unittest{
 	assert(pl.getTrack(0).info == "какая то попсятина");
 	if (pl.loadFromPLFile("playlist.m3u8"))
 		assert(pl.length > 0);
+	pl.saveToPLFile("out.m3u8");
 }

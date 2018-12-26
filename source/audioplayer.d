@@ -6,31 +6,16 @@ import derelict.util.loader;
 import derelict.util.system;
 import derelict.util.exception;
 import derelict.sfml2;
-
-
-
-interface Player {
-	bool openFromFile(string fileName);
-	void play();
-	void pause();
-	void setVolume(float);
-	float getVolume();
-	void setPlayingOffset(long offset);
-	long getPlayingOffset();
-	soundStatus getStatus();
-	}
-
-alias soundStatus = int;
-enum {
-    Stopped,
-    Paused,
-    Playing
-}
+import types;
 
 
 class APlayer : Player{
 	this(){
 		DerelictSFML2Audio.load();
+	}
+
+	~this(){
+		DerelictSFML2Audio.unload();
 	}
 	
 	bool openFromFile(string fileName){
