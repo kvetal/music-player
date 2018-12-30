@@ -16,9 +16,9 @@ enum string bom = [0xef,0xbb,0xbf];
 
 alias soundStatus = int;
 enum {
-    Stopped,
-    Paused,
-    Playing
+    Stopped = 0,
+    Paused = 1,
+    Playing = 2
 }
 
 ///Интерейс плейлиста

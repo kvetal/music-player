@@ -13,10 +13,21 @@ void main()
 		mplay.stop();
 		mplay1.stop();
 	}
-	mplay.openFromFile("test.mp3");
-	mplay.play();
-	readln();
-	mplay1.openFromFile("test.mp3");
-	mplay1.play();
+	auto am_pl = new PlayList();
+	auto pa_pl = new PlayList();
+	am_pl.loadFromPLFile("Amaranthe.m3u8");
+	pa_pl.loadFromPLFile("pantera.m3u8");
+
+	bool stopper = false;
+while (!stopper)
+	{
+		if (mplay1.getStatus() == Stopped)
+		{
+				writeln(am_pl.getTrack(am_pl.getCurrentTrackIndex()).fullFileName);
+				mplay1.openFromFile(am_pl.getTrack(am_pl.getCurrentTrackIndex()).fullFileName);
+				mplay1.play();
+				am_pl.next();
+		}
+	}
 	readln();
 }
