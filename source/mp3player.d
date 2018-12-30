@@ -1,6 +1,6 @@
 module mp3player;
 
-//import std.stdio;
+import std.stdio;
 import derelict.portaudio;
 import std.conv;
 import derelict.mpg123;
@@ -64,7 +64,7 @@ class MP3Player : IPlayer
 	void play()
 	{
 		//if (fDebug) writeln(Tid.init);
-		if (_thread == Tid.init)
+		if ((_thread == Tid.init)||(this.getStatus == Status.Stopped))
 			_thread = spawn(&_play,thisTid, _filename, _length);
 		else
 			if (this.getStatus == Status.Paused)
@@ -114,6 +114,7 @@ class MP3Player : IPlayer
 	
 	soundStatus getStatus()
 	{
+		if (_thread == Tid.init) return Stopped;
 		Status status;
 		send(_thread,statusMessage(Status.Stopped));
 		receiveTimeout(100.msecs,
@@ -168,7 +169,7 @@ void _play(Tid parentId,string filename,int length)
 					},
 				(seekMessage m)
 					{
-						mpg123_seek_frame(mh,cast (int)(m.sec * mpg123_tpf(mh)),SEEK_SET);
+						mpg123_seek_frame(mh,cast (int)(m.sec * mpg123_tpf(mh)),types.SEEK_SET);
 					},
 				(stopMessage m)
 					{
