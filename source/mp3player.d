@@ -12,6 +12,7 @@ import types;
 import core.thread;
 import std.algorithm;
 import std.range;
+import std.experimental.logger;
 
 bool fDebug = false;
 
@@ -36,6 +37,7 @@ class MP3Player : IPlayer
 		DerelictMPG123.load();
 		DerelictPORTAUDIO.load();
 		_pa_err = Pa_Initialize();
+		if (fDebug) log("Pa_Initialize in this() result:",_pa_err);
 		if (_pa_err != 0) throw new Error("PortAudio initialization failed:"~to!string(Pa_GetErrorText(_pa_err)));
 		_mpg123_status = mpg123_init();
 		if (_mpg123_status != MPG123_OK) throw new Error("MPG123 init failed:"~to!string(_mpg123_status));
@@ -44,26 +46,34 @@ class MP3Player : IPlayer
 	{
 		this.stop();
 		_pa_err = Pa_Terminate();
-		//if (fDebug) writeln("Pa_Terminate in ~this() result:",_pa_err);
+		if (fDebug) log("Pa_Terminate in ~this() result:",_pa_err);
 		mpg123_exit();
 	}
+	/** Открыть файл MP3*/
 	bool openFromFile(string fileName)
 	{
 		_filename = fileName;
 		_mh  = mpg123_new(null, &_mpg_error);
-		if (_mpg_error != MPG123_OK) return false;
+		if (fDebug) 
+			log("mpg123_new result:",_mpg_error);
+		if (_mpg_error != MPG123_OK) 
+			return false;
 		_mpg_error = mpg123_open(_mh, toStringz(_filename));
-		if (_mpg_error != MPG123_OK) return false;
+		if (fDebug) 
+			log("mpg123_open result:",_mpg_error);
+		if (_mpg_error != MPG123_OK) 
+			return false;
 		_mpg_error = mpg123_getformat(_mh, &_rate, &_channels, &_encoding);
-		//if (fDebug) writeln("mpg123_getformat result:",_mpg_error,"\nrate:",_rate,"\nchannels:",_channels,"\nencoding:",_encoding);
+		if (fDebug) 
+			log("mpg123_getformat result:",_mpg_error,"\nrate:",_rate,"\nchannels:",_channels,"\nencoding:",_encoding);
 		if (_mpg_error != MPG123_OK) return false;
 		_length = cast(int) (mpg123_framelength(_mh) * mpg123_tpf(_mh));
 		_file_loaded = true;
 		return true;
 	}
+	/** Начать проигрывание файла*/
 	void play()
 	{
-		//if (fDebug) writeln(Tid.init);
 		if ((_thread == Tid.init)||(this.getStatus == Status.Stopped))
 			_thread = spawn(&_play,thisTid, _filename, _length);
 		else
@@ -73,18 +83,21 @@ class MP3Player : IPlayer
 	
 	void stop()
 	{
+		if (_thread == Tid.init) return;
 		send(_thread,stopMessage());
 	}
 	
 	void pause()
 	{
+		if (_thread == Tid.init) return;
 		send(_thread,pauseMessage());
 	}
 	
 	void setVolume(float volume)
 	{
-		send(_thread,volumeMessage(volume));
 		_volume = volume;
+		if (_thread == Tid.init) return;
+		send(_thread,volumeMessage(volume));
 		
 	}
 	
@@ -96,11 +109,13 @@ class MP3Player : IPlayer
 	/** Смещение от начала в микросекундах*/
 	void setPlayingOffset(long offset)
 	{
+		if (_thread == Tid.init) return;
 		send(_thread,seekMessage(offset/1000000));
 	}
 	
 	long getPlayingOffset()
 	{
+		if (_thread == Tid.init) return -1;
 		long offs;
 		send(_thread,askOffsetMessage());
 			receive(
@@ -114,7 +129,8 @@ class MP3Player : IPlayer
 	
 	soundStatus getStatus()
 	{
-		if (_thread == Tid.init) return Stopped;
+		if (_thread == Tid.init) 
+			return Stopped;
 		Status status;
 		send(_thread,statusMessage(Status.Stopped));
 		receiveTimeout(100.msecs,
@@ -134,8 +150,14 @@ void _play(Tid parentId,string filename,int length)
 		int rate, channels, encoding;
 		PaStreamParameters outputParameters;
 		mpg123_handle* mh  = mpg123_new(null, &mpg_error);
+		if (fDebug) 
+			log("mpg123_new result:",mpg_error);
 		mpg_error = mpg123_open(mh, toStringz(filename));
+		if (fDebug) 
+			log("mpg123_open result:",mpg_error);
 		mpg_error = mpg123_getformat(mh, &rate, &channels, &encoding);
+		if (fDebug) 
+			log("mpg123_getformat result:",mpg_error,"\nrate:",rate,"\nchannels:",channels,"\nencoding:",encoding);
 		auto outDev = Pa_GetDefaultOutputDevice();
 
 		outputParameters.device = outDev;
@@ -151,9 +173,7 @@ void _play(Tid parentId,string filename,int length)
 		if (pa_err < 0) return;
 
 		enum size_t bufSize = 4096;
-		//writeln(mpg123_spf(mh));
 		ubyte[bufSize] outBuf;
-		int numSampleBlock;
 		size_t done;
 		bool pause = false;
 		do
@@ -198,20 +218,16 @@ void _play(Tid parentId,string filename,int length)
 		if (!pause)
 			{
 			mpg_error = mpg123_read(mh, outBuf.ptr, bufSize, &done);
-			//if (fDebug) if (mpg_error != MPG123_OK) writeln("mpg123_read error:",mpg_error);
 			Pa_WriteStream(cast(PaStream*)stream, outBuf.ptr, done/4 );
-			//if (fDebug) writeln("Block:",numSampleBlock," bytes:", done);
-			numSampleBlock++;
 			}
 	}
 	while (mpg_error == MPG123_OK);
 	
 	pa_err = Pa_StopStream(stream);
-//	if (fDebug) writeln("Pa_StopStream:",to!string(Pa_GetErrorText(pa_err)));
+	if (fDebug) log("Pa_StopStream:",to!string(Pa_GetErrorText(pa_err)));
 
 	pa_err = Pa_CloseStream(stream);
-//	if (fDebug) writeln("Pa_CloseStream:",to!string(Pa_GetErrorText(pa_err)));
-//	if (fDebug) writeln("this tid",thisTid);
+	if (fDebug) log("Pa_CloseStream:",to!string(Pa_GetErrorText(pa_err)));
 }
 
 
